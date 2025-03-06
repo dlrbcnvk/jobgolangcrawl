@@ -1,0 +1,8 @@
+db:
+  url: "root:1234@tcp(jobgolang_mysql:3306)/jobgolang"
+mail:
+  smtp_host : "smtp.gmail.com"
+  smtp_port : "587"
+  sender: "dlrbcnvk@gmail.com"
+  password: "euunvoifgqzwewov"
+  receiver: "sgcho7091@gmail.com"

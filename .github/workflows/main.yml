@@ -1,0 +1,43 @@
+name: Build and Push Docker Image to ECR
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Log in to Amazon ECR
+        env:
+          AWS_REGION: ap-northeast-2
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 943822899858.dkr.ecr.$AWS_REGION.amazonaws.com
+
+      - name: Build and push Docker image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker buildx build --platform linux/amd64,linux/arm64 -t 943822899858.dkr.ecr.ap-northeast-2.amazonaws.com/jobgolang-app:$IMAGE_TAG .
+          docker push 943822899858.dkr.ecr.ap-northeast-2.amazonaws.com/jobgolang-app:$IMAGE_TAG
+
+      - name: Image digest
+        id: ecr-image
+        run: |
+          echo "Image digest: ${{ steps.build-and-push.outputs.digest }}"
+
+      - name: Logout from Amazon ECR
+        run: docker logout 943822899858.dkr.ecr.ap-northeast-2.amazonaws.com

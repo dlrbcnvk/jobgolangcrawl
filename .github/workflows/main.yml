@@ -54,6 +54,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:${{ steps.vars.outputs.sha_short }}
+          provenance: false
 
       - name: Image digest
         run: echo ${{ steps.build-image.outputs.digest }}

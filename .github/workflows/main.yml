@@ -27,6 +27,12 @@ jobs:
         run: |
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID}}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
+      - name: Clean up old images in ECR
+        run: |
+          aws ecr list-images --repository-name ${{ secrets.ECR_REPOSITORY }} --query 'imageIds[*]' | \
+          jq '.[].imageDigest' | \
+          xargs -I {} aws ecr batch-delete-image --repository-name ${{ secrets.ECR_REPOSITORY }} --image-ids imageDigest={}
+
       - name: Extract Git commit SHA
         id: vars
         run: echo ::set-output name=sha_short::$(git rev-parse --short HEAD)

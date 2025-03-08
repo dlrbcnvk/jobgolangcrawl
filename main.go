@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	config2 "jobgolangcrawl/config"
+	config "jobgolangcrawl/config"
 	"jobgolangcrawl/crawl"
 	"jobgolangcrawl/database"
 	"jobgolangcrawl/repositories"
@@ -17,7 +17,7 @@ func main() {
 	if env == "" {
 		env = "local"
 	}
-	config, err := config2.LoadConfig(env)
+	config, err := config.LoadConfig(env)
 	if err != nil {
 		log.Fatal(err)
 	}

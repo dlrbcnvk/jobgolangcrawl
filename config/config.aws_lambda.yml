@@ -1,0 +1,8 @@
+db:
+  url: "jobgolang:<password>@tcp(jobgolang-db.c4p22vrgxfxf.ap-northeast-2.rds.amazonaws.com:3306)/jobgolang"
+mail:
+  smtp_host : "smtp.gmail.com"
+  smtp_port : "587"
+  sender: "dlrbcnvk@gmail.com"
+  password: "euunvoifgqzwewov"
+  receiver: "sgcho7091@gmail.com"

@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 	"jobgolangcrawl/config"
 	"log"
 	"os"
@@ -45,7 +46,10 @@ func Initialize(config *config.Config) *sql.DB {
 }
 
 func getRDSSecret() (string, error) {
-	secretName := "rds!db-f47dff62-66bf-44f5-b0d9-d3b3d35b934b"
+	secretName := os.Getenv("RDS_SECRET_NAME")
+	if secretName == "" {
+		return "", fmt.Errorf("RDS_SECRET_NAME environment variable not set")
+	}
 	region := "ap-northeast-2"
 
 	config, err := awsconfig.LoadDefaultConfig(context.TODO(), awsconfig.WithRegion(region))

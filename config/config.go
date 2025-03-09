@@ -28,7 +28,11 @@ func LoadConfig(env string) (*Config, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	filename := fmt.Sprintf(dir+"config/config.%s.yml", env)
+	if runeSlice := []rune(dir); runeSlice[len(runeSlice)-1] == '/' {
+		dir = string(runeSlice[:len(runeSlice)-1])
+	}
+	filename := fmt.Sprintf(dir+"/config/config.%s.yml", env)
+	log.Printf("Loading config from %s\n", filename)
 	b, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err

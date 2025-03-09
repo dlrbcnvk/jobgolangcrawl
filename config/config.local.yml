@@ -1,5 +1,5 @@
 db:
-  url: "root:1234@tcp(127.0.0.1:3306)/jobgolang"
+  url: "root:1234@tcp(127.0.0.1:3306)/jobgolangzzzzzz"
 mail:
   smtp_host : "smtp.gmail.com"
   smtp_port : "587"

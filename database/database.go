@@ -17,9 +17,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-func Initialize(config *config.Config) *sql.DB {
+func Initialize(cfg *config.Config) *sql.DB {
 	// 데이터베이스 연결 설정
-	dsn := config.DB.Url
+	dsn := cfg.DB.Url
 
 	env := os.Getenv("APP_ENV")
 	if env == "aws_lambda" {
@@ -28,7 +28,7 @@ func Initialize(config *config.Config) *sql.DB {
 			log.Fatal(err)
 		}
 		dsn = strings.ReplaceAll(dsn, "<password>", secret)
-		log.Printf("Loading config from %s\n", dsn)
+		log.Printf("Loading cfg from %s\n", dsn)
 	}
 
 	db, err := sql.Open("mysql", dsn)
@@ -52,13 +52,13 @@ func getRDSSecret() (string, error) {
 	}
 	region := "ap-northeast-2"
 
-	config, err := awsconfig.LoadDefaultConfig(context.TODO(), awsconfig.WithRegion(region))
+	awsConfig, err := awsconfig.LoadDefaultConfig(context.TODO(), awsconfig.WithRegion(region))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Create Secrets Manager client
-	svc := secretsmanager.NewFromConfig(config)
+	svc := secretsmanager.NewFromConfig(awsConfig)
 
 	input := &secretsmanager.GetSecretValueInput{
 		SecretId:     aws.String(secretName),

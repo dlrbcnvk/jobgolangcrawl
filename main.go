@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	config "jobgolangcrawl/config"
+	"jobgolangcrawl/config"
 	"jobgolangcrawl/crawl"
 	"jobgolangcrawl/database"
 	"jobgolangcrawl/repositories"
@@ -17,14 +17,14 @@ func main() {
 	if env == "" {
 		env = "local"
 	}
-	config, err := config.LoadConfig(env)
+	cfg, err := config.LoadConfig(env)
 	if err != nil {
 		log.Fatal(err)
 	}
 	totalStart := time.Now()
 
 	// 데이터베이스 초기화
-	db := database.Initialize(config)
+	db := database.Initialize(cfg)
 
 	// crawling
 	crawlService := services.NewCrawlService(
@@ -46,7 +46,7 @@ func main() {
 	newDtos, err := postService.CreateNewPosts(dtos)
 
 	// send email
-	mailService := services.NewMailService(newDtos, config)
+	mailService := services.NewMailService(newDtos, cfg)
 	err = mailService.SendMail()
 	if err != nil {
 		fmt.Println(err)

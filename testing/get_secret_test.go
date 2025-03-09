@@ -1,50 +1,15 @@
-package database
+package testing
 
 import (
-	"database/sql"
-	"jobgolangcrawl/config"
-	"log"
-	"os"
-	"strings"
-
 	"context"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
-
-	_ "github.com/go-sql-driver/mysql"
+	"log"
+	"testing"
 )
 
-func Initialize(config *config.Config) *sql.DB {
-	// 데이터베이스 연결 설정
-	dsn := config.DB.Url
-
-	env := os.Getenv("APP_ENV")
-	if env == "aws_lambda" {
-		secret, err := getRDSSecret()
-		if err != nil {
-			log.Fatal(err)
-		}
-		dsn = strings.ReplaceAll(dsn, "<password>", secret)
-		log.Printf("Loading config from %s\n", dsn)
-	}
-
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// 데이터베이스 연결 확인
-	err = db.Ping()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return db
-}
-
-func getRDSSecret() (string, error) {
+func TestGetSecret(t *testing.T) {
 	secretName := "rds!db-f47dff62-66bf-44f5-b0d9-d3b3d35b934b"
 	region := "ap-northeast-2"
 
@@ -71,5 +36,5 @@ func getRDSSecret() (string, error) {
 	// Decrypts secret using the associated KMS key.
 	var secretString string = *result.SecretString
 
-	return secretString, nil
+	log.Printf("secretString: %s", secretString)
 }

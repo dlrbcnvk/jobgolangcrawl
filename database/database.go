@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"jobgolangcrawl/config"
 	"log"
@@ -23,7 +24,7 @@ func Initialize(cfg *config.Config) *sql.DB {
 
 	env := os.Getenv("APP_ENV")
 	if env == "aws_lambda" {
-		secret, err := getRDSSecret()
+		secret, err := GetRDSSecret()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -45,7 +46,7 @@ func Initialize(cfg *config.Config) *sql.DB {
 	return db
 }
 
-func getRDSSecret() (string, error) {
+func GetRDSSecret() (string, error) {
 	secretName := os.Getenv("RDS_SECRET_NAME")
 	if secretName == "" {
 		return "", fmt.Errorf("RDS_SECRET_NAME environment variable not set")
@@ -73,7 +74,18 @@ func getRDSSecret() (string, error) {
 	}
 
 	// Decrypts secret using the associated KMS key.
-	var secretString string = *result.SecretString
+	var secretJson string = *result.SecretString
 
-	return secretString, nil
+	// 빈 맵 생성
+	var jsonMap map[string]interface{}
+
+	// JSON 문자열을 맵으로 변환
+	err = json.Unmarshal([]byte(secretJson), &jsonMap)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return "", err
+	}
+
+	password := jsonMap["password"].(string)
+	return password, nil
 }

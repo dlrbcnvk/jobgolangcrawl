@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"jobgolangcrawl/config"
 	"jobgolangcrawl/models"
-	"log"
 	"net/smtp"
 	"sort"
 	"strings"
@@ -69,6 +68,6 @@ func (s *MailService) SendMail() error {
 	fmt.Println("Email sent successfully!")
 	mailEnd := time.Now()
 	elapsed := mailEnd.Sub(mailStart)
-	log.Println("Mail Process took: ", elapsed)
+	fmt.Println("Mail Process took: ", elapsed)
 	return nil
 }

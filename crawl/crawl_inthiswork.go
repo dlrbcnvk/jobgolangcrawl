@@ -1,11 +1,14 @@
 package crawl
 
 import (
+	"context"
 	"fmt"
 	"github.com/gocolly/colly/v2"
 	"jobgolangcrawl/models"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 type InThisWorkCrawler struct {
@@ -28,13 +31,14 @@ func NewInThisWorkCrawler() *InThisWorkCrawler {
 func (c *InThisWorkCrawler) Crawl() ([]*models.PostRequestDto, error) {
 	dtos := make([]*models.PostRequestDto, 0)
 	fmt.Printf("=========== Crawling starts %s\n", c.Domains[0])
-	// 지금은 bool 값으로 취소 여부를 판단하지만,
-	// 채널이나 컨텍스트로 취소 여부를 판단하도록 바꿀 수 있을까? 바꿔야 할까?
-	cancel := false
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	ctx, cancel := context.WithCancel(context.Background())
 	c.Collector.OnHTML("div.fusion-text.fusion-text-1 > p > strong > span", func(e *colly.HTMLElement) {
 		text := e.Text
 		if strings.Contains(text, "죄송합니다.") {
-			cancel = true
+			cancel()
 		}
 	})
 
@@ -56,7 +60,9 @@ func (c *InThisWorkCrawler) Crawl() ([]*models.PostRequestDto, error) {
 		companyName = split[1]
 
 		requestDto := models.NewPostRequestDto(postId, link, title, companyName, c.Site)
+		mu.Lock()
 		dtos = append(dtos, requestDto)
+		mu.Unlock()
 	})
 
 	c.Collector.OnRequest(func(r *colly.Request) {
@@ -65,19 +71,32 @@ func (c *InThisWorkCrawler) Crawl() ([]*models.PostRequestDto, error) {
 
 	page := 1
 	for {
-		pageStr := strconv.Itoa(page)
-		pageUrl := fmt.Sprintf(c.Url, pageStr)
-		err := c.Collector.Visit(pageUrl)
-		if err != nil {
-			fmt.Println(err)
-			return dtos, err
+		select {
+		case <-ctx.Done():
+			fmt.Println("InThisWork Crawler Done")
+			break
+		default:
+			wg.Add(1)
+			go func(page int) {
+				defer wg.Done()
+				pageStr := strconv.Itoa(page)
+				pageUrl := fmt.Sprintf(c.Url, pageStr)
+				err := c.Collector.Visit(pageUrl)
+				if err != nil {
+					fmt.Println(err)
+					cancel()
+				}
+			}(page)
+			page++
+			time.Sleep(100 * time.Millisecond) // 작은 지연을 추가하여 요청 간의 충돌 방지
 		}
-		if cancel {
-			fmt.Printf("%s 페이지를 끝으로 작업을 종료합니다.\n", pageStr)
+		if ctx.Err() != nil {
 			break
 		}
-		page++
 	}
+	wg.Wait()
+	cancel()
+
 	fmt.Printf("=========== Crawling ends %s\n", c.Domains[0])
 	return dtos, nil
 }

@@ -1,11 +1,14 @@
 package crawl
 
 import (
+	"context"
 	"fmt"
 	"github.com/gocolly/colly/v2"
 	"jobgolangcrawl/models"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 type IncruitCrawler struct {
@@ -29,8 +32,18 @@ func NewIncruitCrawler() *IncruitCrawler {
 func (c *IncruitCrawler) Crawl() ([]*models.PostRequestDto, error) {
 	dtos := make([]*models.PostRequestDto, 0)
 	fmt.Printf("=========== Crawling starts %s\n", c.Domains[0])
-	// 인크루트는 페이지 방식이 아니라 startno 를 쿼리파라미터로 지정한다. startno부터 최대 30개를 불러온다.
-	startno := 1
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	ctx, cancel := context.WithCancel(context.Background())
+
+	c.Collector.OnHTML("body", func(e *colly.HTMLElement) {
+		contentLength := e.DOM.Find("ul.c_row").Length()
+		if contentLength == 0 {
+			cancel()
+		}
+	})
+
 	c.Collector.OnHTML("ul.c_row", func(e *colly.HTMLElement) {
 		var postId, link, title, companyName string
 
@@ -50,31 +63,44 @@ func (c *IncruitCrawler) Crawl() ([]*models.PostRequestDto, error) {
 			// link
 			link = e.Attr("href")
 		})
-		startno++
 
 		requestDto := models.NewPostRequestDto(postId, link, title, companyName, c.Site)
-		fmt.Printf("PostRequestDto: %q\n", *requestDto)
+		mu.Lock()
 		dtos = append(dtos, requestDto)
+		mu.Unlock()
 	})
 
 	c.Collector.OnRequest(func(r *colly.Request) {
 		fmt.Println("Visiting", r.URL.String())
 	})
 
+	// 인크루트는 페이지 방식이 아니라 startno 를 쿼리파라미터로 지정한다. startno부터 최대 30개를 불러온다.
+	startno := 1
 	for {
-		preStartNo := startno
-		pageStr := strconv.Itoa(startno)
-		err := c.Collector.Visit(c.Url + pageStr)
-		if err != nil {
-			fmt.Println(err)
-			return dtos, err
+		select {
+		case <-ctx.Done():
+			fmt.Println("Incruit Crawler Done")
+			break
+		default:
+			wg.Add(1)
+			go func(startno int) {
+				defer wg.Done()
+				pageStr := strconv.Itoa(startno)
+				err := c.Collector.Visit(c.Url + pageStr)
+				if err != nil {
+					fmt.Println(err)
+					cancel()
+				}
+			}(startno)
+			startno += 30
+			time.Sleep(100 * time.Millisecond)
 		}
-
-		if startno == preStartNo {
-			fmt.Printf("%d 번을 끝으로 작업을 종료합니다.\n", (startno - 1))
+		if ctx.Err() != nil {
 			break
 		}
 	}
+	wg.Wait()
+	cancel()
 
 	fmt.Printf("=========== Crawling ends %s\n", c.Domains[0])
 	return dtos, nil

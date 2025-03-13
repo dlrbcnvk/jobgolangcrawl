@@ -28,10 +28,10 @@ func main() {
 
 	// crawling
 	crawlService := services.NewCrawlService(
-		//crawl.NewSaraminCrawler(),
-		//crawl.NewJobKoreaCrawler(),
+		crawl.NewSaraminCrawler(),
+		crawl.NewJobKoreaCrawler(),
 		crawl.NewIncruitCrawler(),
-		//crawl.NewInThisWorkCrawler(),
+		crawl.NewInThisWorkCrawler(),
 	)
 	dtos, err := crawlService.Crawl()
 	if err != nil {
